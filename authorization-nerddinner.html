@@ -1,0 +1,311 @@
+<!--
+Google IO 2012 HTML5 Slide Template
+
+Authors: Eric Bidelman <ebidel@gmail.com>
+         Luke Mahé <lukem@google.com>
+
+URL: https://code.google.com/p/io-2012-slides
+-->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google IO 2012</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <!--<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">-->
+    <!--<meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+    <!--This one seems to work all the time, but really small on ipad-->
+    <!--<meta name="viewport" content="initial-scale=0.4">-->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="stylesheet" media="all" href="theme/css/default.css">
+    <link rel="stylesheet" media="only screen and (max-device-width: 480px)" href="theme/css/phone.css">
+    <base target="_blank">
+    <!-- This amazingness opens all links in a new tab. -->
+    <script data-main="js/slides" src="js/require-1.0.8.min.js"></script>
+</head>
+<body style="opacity: 0">
+
+<slides class="layout-widescreen">
+
+    <slide class="title-slide segue nobackground">
+        <aside class="gdbar"><img src="images/fg_icon_128.png"></aside>
+        <!-- The content of this hgroup is replaced programmatically through the slide_config.json. -->
+        <hgroup class="auto-fadein">
+            <h1 data-config-title><!-- populated from slide_config.json --></h1>
+
+            <h2 data-config-subtitle><!-- populated from slide_config.json --></h2>
+
+            <p data-config-presenter><!-- populated from slide_config.json --></p>
+        </hgroup>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>What is authorization</h2>
+        </hgroup>
+        <article>
+            <q>
+                Authorization is the function of specifying access rights to resources, which is related to information
+                security
+                and computer security in general and to access control in particular. More formally, <i>to authorize</i>
+                is to<br/>
+                <b>define access policy</b>.
+            </q>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>The question is ...</h2>
+        </hgroup>
+        <article class="flexbox vcenter centered">
+            <img src="images/thinking-cap.gif" height="75%" width="75%" alt="Description" title="Description">
+            <p>HOW TO DEFINE POLICY THE EASIEST and RELIABLE WAY</p>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>The imperative way</h2>
+        </hgroup>
+        <article class="smaller">
+            <pre class="prettyprint" data-lang="java">
+            public void updateOrganization(Organization organization) {
+                <b>GastroUser principal = SecurityContext.getInstance().getPrincipal();
+                if (principal != null &&
+                    (principal.isAdministrator() || principal.isOrganizationOwner(organization.getId()))) {</b>
+                    //check preconditions
+                    Assert.isTrue(
+                        organization.isApproved(),
+                        "Cannot update organization that hasn't been yet approved!"
+                    );
+                    //do update logic
+                    updateOrganizationBySystem(organization);
+                    //inform the system about the action
+                    publisher.publishEvent(new OrganizationUpdatedEvent(this, organization));
+                <b>else {
+                    throw new AccessDeniedException("User is not authorized to execute this action!");
+                }</b>
+            }
+            </pre>
+            <p>Six out of 16 lines to each method to execute authorization?</p>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Let's refactor this ...</h2>
+        </hgroup>
+        <article class="smaller">
+            <pre class="prettyprint" data-lang="java">
+            <b>/** This is shared **/
+            public static void authorizeAdministrator(Organization organization) {
+                GastroUser principal = SecurityContext.getInstance().getPrincipal();
+                if (!(principal != null &&
+                    (principal.isAdministrator() || principal.isOrganizationOwner(organization.getId())))) {
+                    throw new AccessDeniedException("User is not authorized to execute this action!");
+                }
+            }</b>
+
+            public void updateOrganization(Organization organization) {
+                <b>authorizeAdministrator(organization);</b>
+                Assert.isTrue(
+                    organization.isApproved(),
+                    "Cannot update organization that was not yet approved!"
+                );
+                updateOrganizationBySystem(organization);
+                publisher.publishEvent(new OrganizationUpdatedEvent(this, organization));
+            }
+            </pre>
+            <p>Well now we have single line but we are forced to use only static methods and singletons to keep it pretty.</p>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>The declarative way - AOP</h2>
+            <h3>Isn't it a sample example of crosscutting concern?</h3>
+        </hgroup>
+        <article class="smaller">
+            <pre class="prettyprint" data-lang="java">
+            <b>@Pointcut("execution(* com.fg.whatever.business..*.update*(..))")</b>
+            public static void authorizeAdministrator(<b>Organization organization!!!</b>) {
+                GastroUser principal = SecurityContext.getInstance().getPrincipal();
+                if (!(principal != null &&
+                    (principal.isAdministrator() || principal.isOrganizationOwner(organization.getId())))) {
+                    throw new AccessDeniedException("User is not authorized to execute this action!");
+                }
+            }
+
+            public void updateOrganization(Organization organization) {
+                Assert.isTrue(
+                    organization.isApproved(),
+                    "Cannot update organization that was not yet approved!"
+                );
+                updateOrganizationBySystem(organization);
+                publisher.publishEvent(new OrganizationUpdatedEvent(this, organization));
+            }
+            </pre>
+            <p>We have to think about unified naming schemes and with complex authorization this solution quickly runs of breath.</p>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>How does Spring solve it?</h2>
+        </hgroup>
+        <article class="smaller">
+            <pre class="prettyprint" data-lang="java">
+            <b>@PreAuthorize(
+                "principal.userObject != null and " +
+                "(principal.userObject.administrator or principal.userObject.isOwnerOf(#organization.id))"
+            )</b>
+            public void updateOrganization(Organization organization) {
+                Assert.isTrue(
+                    organization.isApproved(),
+                    "Cannot update organization that was not yet approved!"
+                );
+                updateOrganizationBySystem(organization);
+                publisher.publishEvent(new OrganizationUpdatedEvent(this, organization));
+            }
+            </pre>
+            <p>Half way there - even if this is currently recommended and standard solution.</p>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Let's refactor expression to share the logic ...</h2>
+        </hgroup>
+        <article class="smaller">
+            <pre class="prettyprint" data-lang="java">
+            <b>private static final String IS_ADMINISTRATOR = "...";
+            private static final String IS_ORGANIZATION_OWNER = "...";
+
+            @PreAuthorize(IS_ADMINISTRATOR  + " or " + IS_ORGANIZATION_OWNER)</b>
+            public void updateOrganization(Organization organization) {
+                Assert.isTrue(
+                    organization.isApproved(),
+                    "Cannot update organization that was not yet approved!"
+                );
+                updateOrganizationBySystem(organization);
+                publisher.publishEvent(new OrganizationUpdatedEvent(this, organization));
+            }
+            </pre>
+            <p>Better - but we cannot look up for all methods that are protected to admin access.</p>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Let's refactor expression to share the logic ...</h2>
+        </hgroup>
+        <article class="smaller">
+            <pre class="prettyprint" data-lang="java">
+            <b>@AllowedForAdministrator
+            @AllowedForEdeeAdmin
+            @AllowedForOrganizationOwner
+            @DeniedForMerchant</b>
+            public void updateOrganization(Organization organization) {
+                Assert.isTrue(
+                    organization.isApproved(),
+                    "Cannot update organization that was not yet approved!"
+                );
+                updateOrganizationBySystem(organization);
+                publisher.publishEvent(new OrganizationUpdatedEvent(this, organization));
+            }
+            </pre>
+            <p>This is something I use now in my projects.</p>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>How do I test authorization logic?</h2>
+        </hgroup>
+        <article class="smaller">
+            <pre class="prettyprint" data-lang="java">
+            <b>@Test(expected = AccessDeniedException.class)
+            public void anonymousUserShouldBeDeniedToUpdateOrganization() throws Exception {</b>
+                Organization company = organizationManager.getOrganizationById(2);
+                organizationManager.approveOrganization(company);
+            <b>}
+
+            @Test
+            @RunAsUser("soltysova@fg.cz")
+            public void administratorShouldBeAbleToUpdateOrganization() throws Exception {</b>
+                final Organization company = organizationManager.getOrganizationById(2);
+                organizationManager.updateOrganization(company);
+            <b>}</b>
+            </pre>
+            <p>I test the logic alongside with authorization aspect - but I can separate it if necessary.</p>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Sometimes we need to change user contexts</h2>
+        </hgroup>
+        <article class="smaller">
+            <pre class="prettyprint" data-lang="java">
+            <b>@Test
+            @RunAsUser("cizek@fg.cz")
+            public void administratorCanCancelBonusActionOfTheUser() throws Exception {</b>
+                <b>//in the anonymous class we are logged as soltysova@fg - user
+                RunAsSupportTestExecutionListener.executeInContextOf(
+                    "soltysova@fg.cz", applicationContext,
+                    new RunAsSupportTestExecutionListener.ExecutionClosure() {
+                        @Override
+                        public void execute() {
+                            Bonus inPreparationBonus = bonusManager.getBonusById(20);
+                            bonusManager.publishBonus(inPreparationBonus, Locale.ENGLISH);
+                        }
+                    }
+                );
+
+                //in this context we are cizek@fg.cz - administrator</b>
+                Bonus bonusToCancel = bonusManager.getBonusById(20);
+                bonusManager.cancelBonus(bonusToCancel, "I am cancelling the action.", true);
+                assertEquals(ProductState.CANCELED, bonusManager.getBonusById(20).getState());
+            <b>}</b>
+            </pre>
+            <p>Inside single test I could switch user contexts as I wish. Closures would help here though.</p>
+        </article>
+    </slide>
+
+    <slide class="thank-you-slide dark nobackground">
+        <aside class="gdbar right"><img src="images/fg_icon_128.png"></aside>
+        <article class="flexbox vleft auto-fadein">
+            <h2>... and how do YOU fight with authorization?</h2>
+            <p>Thank you for sharing!</p>
+        </article>
+        <p class="auto-fadein" data-config-contact>
+            <!-- populated from slide_config.json -->
+        </p>
+    </slide>
+
+    <slide class="backdrop"></slide>
+
+</slides>
+
+<script>
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-XXXXXXXX-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function () {
+        var ga = document.createElement('script');
+        ga.type = 'text/javascript';
+        ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0];
+        s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+<!--[if IE]>
+<script src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js"></script>
+<script>CFInstall.check({mode: 'overlay'});</script>
+<![endif]-->
+</body>
+</html>
