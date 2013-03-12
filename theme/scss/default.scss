@@ -2,7 +2,7 @@
 @import "compass/css3/columns";
 @import "compass/css3/user-interface";
 
-$social-tags: '#nerddinner';
+$social-tags: '';
 $brand-small-icon-size: 30px;
 
 $gray-1: #e6e6e6;
@@ -97,8 +97,9 @@ body {
 
 slides > slide {
   display: none;
-  font-family: 'Open Sans', Arial, sans-serif;
+  font-family: 'Ubuntu', Arial, sans-serif;
   font-size: 26px;
+  line-height: 30px;
   color: $gray-3;
   //@include background(linear-gradient(white, white 85%, $gray-1));
   //background-color: white;
@@ -174,7 +175,7 @@ slides > slide {
       position: absolute;
       bottom: $slide-top-bottom-padding / 2;
       left: $slide-left-right-padding;
-      background: url(../../images/google_developers_icon_128.png) no-repeat 0 50%;
+      background: url(../../images/fg_icon_128.png) no-repeat 0 50%;
       @include background-size($brand-small-icon-size $brand-small-icon-size);
       padding-left: $brand-small-icon-size + 10;
       height: $brand-small-icon-size;
@@ -193,7 +194,7 @@ slides > slide {
   &.title-slide {
     &:after {
       content: '';
-      background: url(../../images/io2012_logo.png) no-repeat 100% 50%;
+      background: url(../../images/fg_logo.png) no-repeat 100% 50%;
       @include background-size(contain);
       position: absolute;
       bottom: $slide-top-bottom-padding;
@@ -328,6 +329,14 @@ h3 {
   color: $gray-3;
 }
 
+strong {
+  font-weight: bold;
+}
+
+em {
+  font-style: italic;
+}
+
 ul {
   margin-left: 1.2em;
   margin-bottom: 1em;
@@ -416,7 +425,12 @@ iframe {
 }
 
 dt {
+  margin-top: 0.5em;
   font-weight: bold;
+}
+
+dd {
+  margin-left: 2em;
 }
 
 button {

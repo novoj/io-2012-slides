@@ -1,0 +1,719 @@
+<!--
+Google IO 2012 HTML5 Slide Template
+
+Authors: Eric Bidelman <ebidel@gmail.com>
+         Luke Mahé <lukem@google.com>
+
+URL: https://code.google.com/p/io-2012-slides
+-->
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/html">
+<head>
+    <title>ADaM - Abstract Data Mapper, March 2013</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <!--<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">-->
+    <!--<meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+    <!--This one seems to work all the time, but really small on ipad-->
+    <!--<meta name="viewport" content="initial-scale=0.4">-->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="stylesheet" media="all" href="../../theme/css/default.css">
+    <link rel="stylesheet" media="only screen and (max-device-width: 480px)" href="../../theme/css/phone.css">
+    <base target="_blank">
+    <!-- This amazingness opens all links in a new tab. -->
+    <script data-main="slides" src="../../js/require-1.0.8.min.js"></script>
+</head>
+<body style="opacity: 0">
+
+<slides class="layout-widescreen">
+
+    <slide class="title-slide segue nobackground">
+        <aside class="gdbar"><img src="../../images/fg_icon_128.png"></aside>
+        <img src="../../images/adam/adam.jpg" style="float: right;"/>
+
+        <!-- The content of this hgroup is replaced programmatically through the slide_config.json. -->
+        <hgroup class="auto-fadein">
+            <h1 data-config-title><!-- populated from slide_config.json --></h1>
+            <h2 data-config-subtitle><!-- populated from slide_config.json --></h2>
+            <p data-config-presenter><!-- populated from slide_config.json --></p>
+        </hgroup>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Bez zbytečných řečí jdeme na věc</h2>
+        </hgroup>
+        <article class="flexbox vcenter">
+            <img src="../../images/adam/erd.png" class="reflect"/>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>ADaM umí číst 3 úrovně dat a zapisovat do dvou</h2>
+        </hgroup>
+        <article class="flexbox vcenter">
+            <img src="../../images/adam/read-write.png" class="reflect"/>
+            <aside class="note">
+                <section style="width: 80%">
+                    <ul>
+                        <li>entita může a nemusí mít svůj bundle</li>
+                        <li>entita definuje PK</li>
+                        <li>PK musí být unikátní, pokud chceme entitu ukládat - v extrémních případech, kdy máme entitu jen pro čtení je možné definovat neunikátní primární klíč (např. pro select distinct)</li>
+                        <li>ostatní bundly musí mít FK na entitní tabulku - <strong>refKey</strong></li>
+                        <li>jediná vyjímka je metadata bundle s <strong>referredByEntityColumn</strong> tam může být vazba obrácená</li>
+                        <li>4 a další úroveň lze simulovat pouze s pomocí SQL view</li>
+                    </ul>
+                </section>
+            </aside>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Ukládá se po směru cizích klíčů do 2 úrovně</h2>
+        </hgroup>
+        <article class="flexbox vcenter">
+            <img src="../../images/adam/create.png" class="reflect"/>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Čtou se samostatně 1:1 a 1:N bundly</h2>
+        </hgroup>
+        <article class="flexbox vcenter">
+            <img src="../../images/adam/select.png" class="reflect"/>
+            <aside class="note">
+                <section style="width: 80%">
+                    <ul>
+                        <li>hlavní select směřuje na entitní tabulku</li>
+                        <ul>
+                            <li>1:1 jsou připojeny přes INNER JOIN</li>
+                            <li>1:0..1 jsou připojeny přes LEFT JOIN</li>
+                        </ul>
+                        <li>pro každý 1:N bundle je vygenerován samostatný SELECT přes sadu cizích klíčů</li>
+                        <ul>
+                            <li>... z toho plynou důsledky pro tvorbu podmínek v <strong>query</strong></li>
+                        </ul>
+                    </ul>
+                </section>
+            </aside>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Jak správně vytvořit XML soubor</h2>
+        </hgroup>
+        <article class="smaller">
+            <p>Vytvářejte vždy jako externí soubor:</p>
+            <pre class="prettyprint" data-lang="xml">
+                &lt;adammodule&gt;
+                    &lt;model name="prague_marathon" version="1.3"&gt;
+                        &lt;metadataConfiguration resource="storage:f.cfg:/adam/mapovani.xml"/&gt;
+                        &lt;autoupdate resource="storage:f.cfg:/adam/sql/"/&gt;
+                        &lt;!-- další podsložka oracle / mysql se automaticky připojí sama --&gt;
+                    &lt;/model&gt;
+                &lt;/adammodule&gt;
+            </pre>
+            <p>... s namapováním XSD (Xml Schema):</p>
+            <pre class="prettyprint" data-lang="xml">
+                &lt;?xml version="1.0" encoding="utf-8"?&gt;
+                &lt;binding xmlns="http://www.fg.cz/xsd/adam"
+                         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                         xsi:schemaLocation="http://www.fg.cz/xsd/adam http://www.fg.cz/xsd/adam_2-15.xsd"&gt;
+                &lt;/binding&gt;
+            </pre>
+            <p>Idea vám bude za odměnu napovídat a validovat XML</p>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Zjednodušené mapování</h2>
+        </hgroup>
+        <article class="smaller">
+            <pre class="prettyprint" data-lang="xml">&lt;entity name="blogPost" table="T_BLOG_POST"/&gt;</pre>
+            <div class="build">
+                <div>
+                    <p>je</p>
+                    <pre class="prettyprint" data-lang="xml">&lt;entity name="blogPost" table="T_BLOG_POST" <b>primaryKey="id"</b>&gt;
+    &lt;metadataBundle <b>name="standardMetadata" default="true"
+                    multiplicity="1:1" loadByDefault="true" table="T_BLOG_POST"</b>/&gt;
+&lt;/entity&gt;</pre>
+                </div>
+                <div>
+                    <p>je</p>
+                    <pre class="prettyprint" data-lang="xml">&lt;entity name="blogPost" table="T_BLOG_POST" primaryKey="id"&gt;
+    &lt;metadataBundle <b>name="standardMetadata" default="true"
+                    multiplicity="1:1" loadByDefault="true" table="T_BLOG_POST"</b>&gt;
+        <b>&lt;autoloadMetadata filter="allMissing"/&gt;</b>
+    &lt;/metadataBundle&gt;
+&lt;/entity&gt;</pre>
+                </div>
+            </div>
+        </article>
+        <aside class="note">
+            <section style="width: 80%;">
+            <h3><strong>Výchozí hodnoty</strong></h3>
+            <ul>
+                <li><strong>name:</strong> standardMetadata</li>
+                <li><strong>primaryKey:</strong> id</li>
+                <li><strong>loadByDefault:</strong> true</li>
+                <li><strong>multiplicity:</strong> 1:1</li>
+                <li><strong>table:</strong> entity table</li>
+                <li><strong>default:</strong> první definovaný bundle</li>
+                <li><strong>colName:</strong> metadata name</li>
+                <li>
+                    <strong>metadata:</strong> allMissing - seznam všech povolených variant:<br/>
+                    &lt;autoloadMetadata filter="allMissing"/&gt;<br/>
+                    &lt;autoloadMetadata filter="regex:.[^rR].*"/&gt;<br/>
+                    &lt;autoloadMetadata filter="except:col1,col2"/&gt;<br/>
+                </li>
+            </ul>
+            </section>
+        </aside>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Základní mapování</h2>
+        </hgroup>
+        <article class="smaller">
+<pre class="prettyprint" data-lang="xml">&lt;entity name="blogPost" table="T_BLOG_POST"&gt;
+    &lt;metadataBundle name="standardMetadata" loadByDefault="true" table="T_BLOG_POST"&gt;
+        &lt;autoloadMetadata/&gt;
+        &lt;metadata name="author" colName="idAuthor" extensionTable="T_BLOG_AUTHOR"/&gt;
+        &lt;metadata name="blog" colName="idBlog" extensionTable="T_BLOG_SITE"/&gt;
+    &lt;/metadataBundle&gt;
+    &lt;metadataBundle name="contentMetadata" multiplicity="1:1" table="T_BLOG_POST_DATA" refKey="idPost"/&gt;
+    &lt;metadataBundle name="tags" loadByDefault="false" multiplicity="1:N" table="T_BLOG_POST_TAG" refKey="idPost"&gt;
+        &lt;metadata name="tag" colName="idTag" extensionTable="T_BLOG_TAG" primaryKey="id"/&gt;
+    &lt;/metadataBundle&gt;
+&lt;/entity&gt;</pre>
+            <h3 style="font-size: 90%; line-height: 32px;"><strong>Význam</strong></h3>
+            <dl style="font-size: 80%">
+                <dt>loadByDefault</dt>
+                <dd>
+                    má být bundle dotažen s každým selectem nebo jen na vyžádání?<br/>
+                    načtení se vynucuje přes zmínku ve <strong>filter</strong>, <strong>order</strong> nebo <strong>hint</strong>
+                </dd>
+                <dt>primaryKey, refKey, referredByEntityColumn</dt>
+                <dd>
+                    definováno na bundle: refKey bundlu → primaryKey entity<br/>
+                    definováno na bundle: referredByEntityColumn entity → primaryKey bundlu</br>
+                    definováno na metadata: metadata name → primaryKey extensionTable
+                </dd>
+            </dl>
+            <aside class="note">
+                <section style="width: 80%; text-align: center;">
+                    <img src="../../images/adam/erd.png">
+                </section>
+            </aside>
+        </article>
+    </slide>
+
+    <slide class="segue dark nobackground">
+        <aside class="gdbar"><img src="../../images/fg_icon_128.png"></aside>
+        <hgroup class="auto-fadein">
+            <h2>Kdo se moc ptá</h2>
+            <h3>... moc se dozví</h3>
+        </hgroup>
+        <article class="flexbox vright" style="text-align: right;">
+            <img src="../../images/adam/questioning.jpg" height="400px"/>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Jak vypadá metadata kontejner?</h2>
+        </hgroup>
+        <article class="smaller">
+            <pre class="prettyprint" data-lang="json" style="font-size: 50%; line-height: 16px;">
+                MetadataContainer{
+                    primaryKey=1,
+                    propertyBundles={
+                        standardMetadata={
+                            id(PK): '1',
+                            <b>author.id: '1',
+                                author.name: 'Novoj',
+                                blog.id: '1',
+                                blog.title: 'Myšlenky Otce Fura',
+                                blog.description: 'Blog o Javě',</b>
+                            votes: '10',
+                            rating: '0.9'
+                        },
+                        tags=[
+                                {
+                                    id(PK): '2',
+                                    idPost(FK): '1',
+                                    <b>tag.id: '1',
+                                        tag.name: 'Java'</b>
+                                },
+                                {
+                                    id(PK): '3',
+                                    idPost(FK): '1',
+                                    <b>tag.id: '2',
+                                        tag.name: 'Spring'</b>
+                                }
+                        ]
+                    }
+                }
+            </pre>
+            <aside class="note">
+                <section style="width: 80%">
+                    <h3><strong>A jak jej použít ve FreeMarker šabloně?</strong></h3>
+<pre class="prettyprint" data-lang="freemarker" style="margin-left: 40px; padding-left: 10px; padding-top: 1.5em;">
+${cnt.primaryKey},
+${cnt.defaultPropertyBundle.properties["title"]},
+${cnt.propertyBundles["contentMetadata"].properties["description"]}</pre>
+                    <p>Iterace, která vypíše kompletní obsah kontejneru</p>
+<pre class="prettyprint" data-lang="freemarker" style="margin-left: 40px; padding-left: 10px; padding-top: 1.5em;">
+&lt;#list cnt.propertyBundles as bundle&gt;
+    &lt;#if bundle?is_of_type("oneToOneMetadataBundle")&gt;
+            &lt;#list bundle.properties?keys as metadataName&gt;
+                ${metadataName} → ${bundle.properties[metadataName]}
+            &lt;/#list&gt;
+        &lt;#else&gt;
+            &lt;#list bundle as item&gt;
+                &lt;#list item?keys as metadataName&gt;
+                    ${metadataName} → ${item[metadataName]}
+                &lt;/#list&gt;
+            &lt;/#list&gt;
+    &lt;/#if&gt;
+&lt;/#list&gt;</pre>
+                </section>
+            </aside>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>A jak se ADaMa zeptáme?</h2>
+        </hgroup>
+        <article class="smaller">
+            <pre class="prettyprint" data-lang="filter">
+    and(
+        eq(title, 'O Forrestu'),
+        eq(author.name, 'Novoj')
+    );
+    tags: eq(tag.name, 'Java')</pre>
+            <pre class="prettyprint" data-lang="order">
+    standardMetadata: asc(title);
+    tags: desc(tag.name)</pre>
+            <pre class="prettyprint" data-lang="hint">
+    bundle(allInView),
+    paging(1, 20)</pre>
+            <br/>
+            <br/>
+            <br/>
+            <p><a href="http://jachym.fg.cz/cs/knihovna/203.html">Dokumentace dotazovacího jazyka</a></p>
+            <p><a href="http://jachym.fg.cz/cs/knihovna/91.html">Dokumentace rozšíření pro ADaMa</a></p>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Jaké známe typy podmínek?</h2>
+        </hgroup>
+        <article class="smaller" style="margin-top: 30px;">
+            <h3><strong>Filtrovací podmínky</strong></h3>
+            <ul>
+                <li><strong>Porovnávací:</strong> eq, in, like, contains, isTrue, isFalse</li>
+                <li><strong>Rozsahové:</strong> moreThan, lessThan, moreThanEq, lessThanEq, between, overlaps</li>
+                <li><strong>Existenční:</strong> isNull, isNotNull</li>
+                <li><strong>Kontejnery:</strong> and, or, not</li>
+                <li><strong>Rozšíření pro ADaM:</strong> hasAny, hasNotAny</li>
+            </ul>
+            <h3><strong>Třídící podmínky</strong></h3>
+            <ul>
+                <li>asc, desc, order</li>
+            </ul>
+            <h3><strong>Rady</strong></h3>
+            <ul>
+                <li><strong>Základní:</strong> paging, distinct</li>
+                <li><strong>Rozšíření pro ADaM:</strong> deepRemove, bundle</li>
+            </ul>
+            <aside class="note">
+                <section>
+                    <h2>Příklady použití:</h2>
+                    <br/>
+<pre class="prettyprint" data-lang="filter" style="margin-left: 40px; padding-left: 10px; padding-top: 1.5em;">
+overlaps(activeFrom, activeTo, #params[from]#, #params[to]#)
+between(created, #params[from]#, #params[to]#)
+tags: hasAny(eq(tag.name, 'Java')) != tags: eq(tag.name, 'Java')</pre>
+<pre class="prettyprint" data-lang="order" style="margin-left: 40px; padding-left: 10px; padding-top: 1.5em;">
+order(#params[name]#, #params[type]#)</pre>
+<pre class="prettyprint" data-lang="hint" style="margin-left: 40px; padding-left: 10px; padding-top: 1.5em;">
+bundle(allInView)
+bundle(allInView,!contentData,!tags)
+bundle(alldefault,tags)
+deepRemove()</pre>
+                </section>
+            </aside>
+        </article>
+    </slide>
+
+    <slide class="segue dark nobackground">
+        <aside class="gdbar"><img src="../../images/fg_icon_128.png"></aside>
+        <hgroup class="auto-fadein">
+            <h2>Přituhuje</h2>
+            <h3>... pojďme si radši odverzovat :)</h3>
+        </hgroup>
+        <article class="flexbox vright" style="text-align: right;">
+            <img src="../../images/adam/versioning.png" height="300px"/>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Verzování v ADaMu</h2>
+        </hgroup>
+        <article class="flexbox vcenter" style="margin-top: 10px;">
+            <img src="../../images/adam/version.png" height="570px">
+            <aside class="note">
+                <section style="width: 80%; font-size: 80%">
+                    <h3>Co je potřeba udělat pro verzování?</h3>
+                    <ul>
+                        <li>do verzovaných tabulek stačí zavést <strong>idVersion</strong> sloupec</li>
+                        <li>do mapovacího souboru k verzovanému bundlu <strong>versioned="true"</strong></li>
+                        <li>entitní tabulka může a nemusí být verzovaná</li>
+                        <li>verzované můžou být libovolné bundly (ale ne extended metadata, protože ty jsou read-only)</li>
+                    </ul>
+                    <h3>Princip verzování?</h3>
+                    <ul>
+                        <li>vytvoří se nový záznam ve VERSION tabulce</li>
+                        <ul>
+                            <li>zvýší se <strong>versionNumber</strong>, <strong>created</strong> a přenastaví se <strong>lastVersion</strong></li>
+                            <li>lastVersion má hodnotu pouze u jediné (aktuální) verze entity</li>
+                            <li><strong>idVersionedEntity</strong> a <strong>entityName</strong> se nidky nemění!</li>
+                        </ul>
+                        <li>zduplikují se všechny řádky ve verzovaných tabulkách a v nových duplikátech se nastaví idVersion na nový záznam ve VERSION tabulce</li>
+                    </ul>
+                </section>
+            </aside>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Na verze je možné se i ptát</h2>
+        </hgroup>
+        <article class="smaller">
+            <pre class="prettyprint" data-lang="filter">
+                and(
+                    eq(title, 'O Forrestu'),
+                    eq(author.name, 'Novoj')
+                );
+                tags: eq(tag.name, 'Java');
+                lastVersion</pre>
+            <pre class="prettyprint" data-lang="filter">
+                standardMetadata: eq(title, 'O Forrestu');
+                version: eq(state, 'published')</pre>
+            <pre class="prettyprint" data-lang="order">
+                standardMetadata: asc(title);
+                tags: desc(tag.name);
+                version: asc(versionNumber)</pre>
+            <p><a href="http://jachym.fg.cz/cs/knihovna/203.html">Dokumentace dotazovacího jazyka</a></p>
+            <p><a href="http://jachym.fg.cz/cs/knihovna/91.html">Dokumentace rozšíření pro ADaMa</a></p>
+        </article>
+    </slide>
+
+    <slide class="segue dark nobackground">
+        <aside class="gdbar"><img src="../../images/fg_icon_128.png"></aside>
+        <hgroup class="auto-fadein">
+            <h2>Jedeme z kopce</h2>
+            <h3>... teď už je to jen pro fajnšmekry :)</h3>
+        </hgroup>
+        <article class="flexbox vright" style="text-align: right;">
+            <img src="../../images/adam/fajnsmekr.png" height="300px"/>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Diskriminátory - use-case</h2>
+        </hgroup>
+        <article class="flexbox vcenter">
+            <img src="../../images/adam/discriminator.png"/>
+            <p>Emulace dědičnosti na úrovni DB schématu.</p>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Diskriminátory - konfigurace</h2>
+        </hgroup>
+        <article class="flexbox vcenter">
+<pre class="prettyprint" data-lang="xml" style="font-size: 56%; line-height: 24px;">&lt;entity name="employee" viewName="manager" table="Employee"&gt;
+    &lt;metadataBundle name="standardMetadata"&gt;
+        &lt;autoloadMetadata/&gt;
+        &lt;metadata name="employee_type" discriminator="1" extensionTable="EmployeeType" primaryKey="idType"/&gt;
+    &lt;/metadataBundle&gt;
+    &lt;metadataBundle name="specificMetadata" table="Manager" refKey="Employee_id"/&gt;
+&lt;/entity&gt;
+
+&lt;entity name="employee" viewName="developer" table="Employee"&gt;
+    &lt;metadataBundle name="standardMetadata"&gt;
+        &lt;autoloadMetadata/&gt;
+        &lt;metadata name="employee_type" discriminator="2" extensionTable="EmployeeType" primaryKey="idType"/&gt;
+    &lt;/metadataBundle&gt;
+    &lt;metadataBundle name="specificMetadata" table="Developer" refKey="Employee_id"/&gt;
+&lt;/entity&gt;</pre>
+<pre class="prettyprint" data-lang="sql" style="font-size: 56%; line-height: 24px;">
+SELECT ... FROM Employee
+       INNER JOIN Manager on Manager.Employee_id = Employee.id and Employee.employee_type = 1
+       INNER JOIN EmployeeType on EmployeeType.idType = Employee.employee_type
+</pre>
+        </article>
+    </slide>
+    
+    <slide>
+        <hgroup>
+            <h2>Znovupoužitelnost definičních fragmentů</h2>
+            <h3>DON'T REPEAT YOURSELF</h3>
+        </hgroup>
+        <article class="smaller">
+<pre class="prettyprint" data-lang="xml" style="font-size: 60%; line-height: 18px;">&lt;sharedDefinition name="tagNameDefinition"&gt;
+    &lt;metadata name="id"/&gt;
+    &lt;metadata name="tagId"/&gt;
+    &lt;metadata name="lang"/&gt;
+    &lt;metadata name="name"/&gt;
+    &lt;metadata name="sortOrder"/&gt;
+&lt;/sharedDefinition&gt;
+
+&lt;entity name="tagName" table="EDEE_TAG_NAME"&gt;
+    &lt;metadataBundle name="standard" default="true"&gt;
+        &lt;useDefinition ref="tagNameDefinition"/&gt;
+    &lt;/metadataBundle&gt;
+&lt;/entity&gt;
+
+&lt;entity name="tag" table="EDEE_TAG"&gt;
+    &lt;metadataBundle name="standard" default="true"&gt;
+        ...
+    &lt;/metadataBundle&gt;
+    &lt;metadataBundle name="tagNames" table="EDEE_TAG_NAME" refKey="tagId" multiplicity="1:N"&gt;
+        &lt;useDefinition ref="tagNameDefinition"/&gt;
+    &lt;/metadataBundle&gt;
+&lt;/entity&gt;</pre>
+        <aside class="note">
+            <section>
+                <p>Co všechno je možné sdílet?</p>
+                <ul>
+                    <li>sady metadat, 1 a více</li>
+                    <li>sady metadata bundlů, 1 a více</li>
+                </ul>
+            </section>
+        </aside>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Dědičnost</h2>
+        </hgroup>
+        <article class="smaller">
+<pre class="prettyprint" data-lang="xml" style="font-size: 50%; line-height: 16px;">&lt;!-- abstract album - used for media type agnostic querying and updating --&gt;
+&lt;entity name="album" viewName="abstractAlbum" extends="group"&gt;
+    &lt;metadataBundle name="standardMetadata"&gt;
+        &lt;autoloadMetadata/&gt;
+    &lt;/metadataBundle&gt;
+    &lt;metadataBundle name="extendedMetadata" multiplicity="1:1" table="T_MG_ALBUM_GROUP"
+                       referredByEntityColumn="idExtension"/&gt;
+&lt;/entity&gt;
+
+&lt;!-- specific album containing only photos --&gt;
+&lt;entity name="album" viewName="photoAlbum" extends="abstractAlbum"&gt;
+    &lt;modifyBundle name="standardMetadata"&gt;
+        &lt;metadata name="entityType" discriminator="PhotoAlbum"/&gt;
+    &lt;/modifyBundle&gt;
+    &lt;modifyBundle name="extendedMetadata"&gt;
+        &lt;metadata name="mediaType" discriminator="Photo"/&gt;
+        &lt;metadata name="featuredMediaItem" colName="idFeaturedMedia" extensionTable="V_MG_PHOTO"/&gt;
+    &lt;/modifyBundle&gt;
+&lt;/entity&gt;
+
+&lt;!-- specific album containing only videos --&gt;
+&lt;entity name="album" viewName="videoAlbum" extends="abstractAlbum"&gt;
+    &lt;modifyBundle name="standardMetadata"&gt;
+        &lt;metadata name="entityType" discriminator="VideoAlbum"/&gt;
+    &lt;/modifyBundle&gt;
+    &lt;modifyBundle name="extendedMetadata"&gt;
+        &lt;metadata name="mediaType" discriminator="Video"/&gt;
+        &lt;metadata name="featuredMediaItem" colName="idFeaturedMedia" extensionTable="V_MG_VIDEO"/&gt;
+    &lt;/modifyBundle&gt;
+&lt;/entity&gt;</pre>
+            <aside class="note">
+                <section>
+                    <h3>Základní pravidla dědičnosti</h3>
+                    <ul>
+                        <li>bez omezení lze přidávat nové bundly a metadadata</li>
+                        <li>lze modifikovat stávající bundly - ale jen ve smyslu jejich rozšiřování nebo upřesňování</li>
+                        <ul>
+                            <li>přidat nové metadata, které ještě nebylo definováno</li>
+                            <li>specifikovat konkrétněji metadato, které bylo načteno přes <strong>autoload</strong> režim</li>
+                        </ul>
+                        <li>nic není možné odstraňovat</li>
+                    </ul>
+                    <p><strong>Jednoduše:</strong> není možné změnit to, s čím už někdo může počítat!</p>
+                </section>
+            </aside>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Rozšiřování modelu modulů</h2>
+        </hgroup>
+        <article>
+            <p>Pokud to modul podporuje, je možné jeho model rozšířit:</p>
+<pre class="prettyprint" data-lang="xml" style="font-size: 60%; line-height: 24px;">&lt;edeeuimodule&gt;
+    &lt;metamodelExtension version="1.10"&gt;
+        &lt;metadataConfiguration resource="storage:f.cfg:/model/edee-source-extension.xml"/&gt;
+        &lt;autoupdate resource="storage:f.cfg:/model/sql/"/&gt;
+    &lt;/metamodelExtension&gt;
+&lt;/edeeuimodule&gt;</pre>
+            <p>Implementace podpory do libovolného modulu je velmi jednoduchá:</p>
+<pre class="prettyprint" data-lang="java" style="font-size: 60%; line-height: 24px;">
+CpsModuleSupport moduleSupport = getModuleSupport();
+MetadataConfigurationHelper mch = new MetadataConfigurationHelper(moduleConfiguration, moduleSupport);
+mch.applyExtension(metadataManager, moduleSupport.getConfigSupport(config).getModuleConfigRootElement());
+</pre>
+            <aside class="note">
+                <section style="width: 80%;">
+                    <h3><strong>Princip kukaččího vejce</strong></h3>
+                    <p>Modulu je možné vnutit změněné entity aniž by si toho všimnul. Díky pravidlům dědičnosti
+                       není riziko, že by mohlo dojít k nepředvídaným chybám - je možné jen doplňovat.</p>
+<pre class="prettyprint" data-lang="xml" style="font-size: 60%; line-height: 24px; margin-left: 40px; padding-left: 10px; padding-top: 1.5em;">
+&lt;entity name="media" viewName="photo" replacesOriginal="true"&gt;
+    &lt;metadataBundle name="rating" multiplicity="1:N"
+                    table="T_RATING_USER" loadByDefault="false" refKey="id"&gt;
+        &lt;metadata name="id" colName="IDENTIFIER_TX"/&gt;
+        &lt;metadata name="ratedType" colName="RATED_TYPE_TX" discriminator="gallery_photo"/&gt;
+        &lt;metadata name="type" colName="TYPE_TX" discriminator="rate"/&gt;
+        &lt;metadata name="idUser" colName="USER_FK"/&gt;
+        &lt;metadata name="rate" colName="RATE_IN"/&gt;
+        &lt;metadata name="dateCreated" colName="CREATED_DT"/&gt;
+    &lt;/metadataBundle&gt;
+&lt;/entity&gt;</pre>
+                </section>
+            </aside>
+        </article>
+    </slide>
+
+    <slide class="segue dark nobackground">
+        <aside class="gdbar"><img src="../../images/fg_icon_128.png"></aside>
+        <img src="../../images/adam/Ramjet.jpg" height="250px" style="float: right"/>
+        <hgroup class="auto-fadein">
+            <h2>Připoutejte se</h2>
+            <h3>... letíme RamJetem :)</h3>
+        </hgroup>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Jak se vyznat v ADaM entitách?</h2>
+        </hgroup>
+        <article>
+            <div>
+                <p>Každý modul může mít vlastní sadu ADaM entit.</p>
+                <p>Každý může v CPS nastartovat jeden i více ADaM modulů.</p>
+                <q style="font-size: 120%; float: right">Jak teda najít tu správnou entitu a nesplést se?</q>
+            </div>
+            <div class="build" style="margin-top: 4em;">
+                <div>
+                    <h3><strong>Máme přece modely!</strong></h3>
+                    <pre class="prettyprint" data-lang="xml" style="font-size: 60%; line-height: 24px; margin-left: 40px; padding-left: 10px; padding-top: 1.5em;">
+&lt;adammodule&gt;
+    &lt;model name="contest_2012" version="1.14"&gt;
+        &lt;metadataConfiguration resource="classpath:/META-INF/lib_metadata_test/metadata/contest_2012.xml"/&gt;
+        &lt;autoupdate resource="classpath:/META-INF/lib_metadata_test/sql/"/&gt;
+    &lt;/model&gt;
+    &lt;model name="contest_2013" version="1.2"&gt;
+        &lt;metadataConfiguration resource="classpath:/META-INF/lib_metadata_test/metadata/contest_2013.xml"/&gt;
+        &lt;autoupdate resource="classpath:/META-INF/lib_metadata_test/sql/"/&gt;
+    &lt;/model&gt;
+&lt;/adammodule&gt;</pre>
+                </div>
+            </div>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Jaké prostředky má RamJet pro práci s ADaMem?</h2>
+        </hgroup>
+        <article>
+            <div style="display: inline-block; margin-left: 80px; margin-top: 60px; vertical-align: top;">
+                <h3><strong>Akce</strong></h3>
+                <dl>
+                    <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.lifecycle.command.impl.AdamStoringCommand">adamStore</a></dt>
+                    <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.lifecycle.command.impl.AdamStoringCommandAsNewRevision">adamStoreAsNewRevision</a></dt>
+                    <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.lifecycle.command.impl.AdamRemovingCommand">adamRemove</a></dt>
+                    <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.lifecycle.command.impl.AdamRemoveChildItemAction">adamStoreAsNewRevision</a></dt>
+                    <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.lifecycle.command.impl.AdamBatchUpdateCommand">adamBatchUpdate</a></dt>
+                    <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.lifecycle.command.impl.AdamCreateRevisionCommand">adamCreateRevision</a></dt>
+                </dl>
+            </div>
+            <div style="display: inline-block; margin-left: 60px; margin-top: 60px; vertical-align: top;">
+                <h3><strong>Poskytovatelé dat</strong></h3>
+                <dl>
+                    <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.source.recordQuery.adam.AdamRecordSource">adamRecordSource</a></dt>
+                    <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.source.record.adam.AdamRecordListingSource">adamRecordListingSource</a></dt>
+                    <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.definition.widget.impl.selectable.impl.AdamSelectableItemsProvider">adamSelectableSource</a></dt>
+                    <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.definition.widget.impl.jsAutocomplete.data.AdamAutocompleteDataProvider">adamAutocompleteSource</a></dt>
+                    <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.source.recordListing.adam.AdamVersionRecordListingSource">adamVersionRecordListingSource</a></dt>
+                </dl>
+            </div>
+        </article>
+    </slide>
+
+    <slide>
+        <article class="flexbox vcenter">
+            <img src="../../images/adam/calltoaction.gif" width="80%"/>
+            <h3>Myslím si, že je nutné co nejdříve implementovat ADaM Inspektora.</h3>
+            <ol style="font-size: 120%; line-height: 42px;">
+                <li>... vím jak</li>
+                <li>... vím kdy a kde</li>
+                <li style="margin-top: 30px;"><strong>Dobrovolníci?</strong></li>
+            </ol>
+        </article>
+    </slide>
+
+    <slide class="thank-you-slide dark nobackground">
+        <aside class="gdbar right"><img src="../../images/fg_icon_128.png"></aside>
+        <article class="flexbox vleft auto-fadein">
+            <h2>A to to je vše, přátelé!</h2>
+            <p>Nějaké dotazy?</p>
+        </article>
+        <p class="auto-fadein" data-config-contact>
+            <!-- populated from slide_config.json -->
+        </p>
+    </slide>
+
+    <slide class="backdrop"></slide>
+
+</slides>
+
+<script>
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-XXXXXXXX-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function () {
+        var ga = document.createElement('script');
+        ga.type = 'text/javascript';
+        ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0];
+        s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+<!--[if IE]>
+<script src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js"></script>
+<script>CFInstall.check({mode: 'overlay'});</script>
+<![endif]-->
+</body>
+</html>

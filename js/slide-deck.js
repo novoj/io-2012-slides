@@ -315,7 +315,7 @@ SlideDeck.prototype.loadConfig_ = function(config) {
   }
 
   if (settings.title) {
-    document.title = settings.title.replace(/<br\/?>/, ' ') + ' - Google IO 2012';
+    document.title = settings.title.replace(/<br\/?>/, ' ') + ' - FG Forrest, a.s.';
     document.querySelector('[data-config-title]').innerHTML = settings.title;
   }
 
@@ -411,7 +411,7 @@ SlideDeck.prototype.addFonts_ = function(fonts) {
   var el = document.createElement('link');
   el.rel = 'stylesheet';
   el.href = ('https:' == document.location.protocol ? 'https' : 'http') +
-      '://fonts.googleapis.com/css?family=' + fonts.join('|') + '&v2';
+      '://fonts.googleapis.com/css?family=' + fonts.join('|') + '&v2&&subset=latin,latin-ext';
   document.querySelector('head').appendChild(el);
 };
 
