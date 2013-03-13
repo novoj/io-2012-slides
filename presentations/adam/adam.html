@@ -63,6 +63,8 @@ URL: https://code.google.com/p/io-2012-slides
                         <li>ostatní bundly musí mít FK na entitní tabulku - <strong>refKey</strong></li>
                         <li>jediná vyjímka je metadata bundle s <strong>referredByEntityColumn</strong> tam může být vazba obrácená</li>
                         <li>4 a další úroveň lze simulovat pouze s pomocí SQL view</li>
+                        <li>jednu tabulku je možné mapovat ve více entitách</li>
+                        <li>jednu tabulku je možné mapovat vícekrát i v jedné a té samé entitě</li>
                     </ul>
                 </section>
             </aside>
@@ -666,6 +668,87 @@ mch.applyExtension(metadataManager, moduleSupport.getConfigSupport(config).getMo
                     <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.source.recordListing.adam.AdamVersionRecordListingSource">adamVersionRecordListingSource</a></dt>
                 </dl>
             </div>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Načítání dat z record do input komponent?</h2>
+        </hgroup>
+        <article>
+            <p>Standardně se řeší přidáním <strong>populateWidgetsFromRecord</strong> interceptoru:</p>
+<pre class="prettyprint" data-lang="xml" style="font-size: 60%; line-height: 24px; margin-left: 40px; padding-left: 10px; padding-top: 1.5em;">&lt;parametrizedPage id="test"&gt;
+    &lt;interceptor type="populateWidgetsFromRecord"/&gt;
+    &lt;structure&gt;
+        &lt;record filter="eq(id, #params[id]#)"&gt;
+            &lt;dataSource type="adamRecordSource" viewName="entitaX"/&gt;
+            &lt;hiddenInput id="id"/&gt;
+            &lt;textInput id="name"/&gt;
+            &lt;textInput id="weirdName"&gt;
+                &lt;metadata&gt;
+                    &lt;adam&gt;specifickyBundle@nazevMetadata&lt;/adam&gt;
+                &lt;/metadata&gt;
+            &lt;/textInput&gt;
+        &lt;/record&gt;
+    &lt;/structure&gt;
+&lt;/parametrizedPage&gt;</pre>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Jak na ADaM lokátory</h2>
+        </hgroup>
+        <article>
+            <p>ADaM lokátor je potřeba, když není možné, aby si mapování domyslel RamJet sám:</p>
+<pre class="prettyprint" data-lang="xml" style="font-size: 70%; line-height: 20px;">
+&lt;adam&gt;name&lt;/adam&gt;                     &lt;!-- ADaM kontejner ↔ widgetData     --&gt;
+&lt;adam.readOnly&gt;name&lt;/adam.readOnly&gt;   &lt;!-- ADaM kontejner → widgetData     --&gt;
+&lt;adam.writeOnly&gt;name&lt;/adam.writeOnly&gt; &lt;!-- widgetData     → ADaM kontejner --&gt;</pre>
+            <p>V jednom widgetu může být i několik mapování:</p>
+<pre class="prettyprint" data-lang="xml" style="font-size: 70%; line-height: 20px;">
+&lt;textInput&gt;
+    &lt;metadata&gt;
+        &lt;!-- adamování do primární hodnoty --&gt;
+        &lt;adam&gt;category&lt;/adam&gt;
+        &lt;!-- adamování metadata sortOrder do pojmenované hodnoty poradi --&gt;
+        &lt;adam&gt;poradi=sortOrder&lt;/adam&gt;               
+        &lt;!-- adamování metadata tag.id z 1:N bundlu do pojmenované hodnoty tagy --&gt;
+        &lt;!-- více položek bude do jednoho stringu spojeno oddělovačem ; --&gt;
+        &lt;adam&gt;[tagy=tag.id]&lt;/adam&gt;
+        &lt;!-- adamování metadata tag.name z 1:N bundlu do pojmenované hodnoty tagy --&gt;
+        &lt;!-- více položek bude do jednoho stringu spojeno oddělovačem , --&gt;
+        &lt;adam&gt;[nazvy=tag.name], &lt;/adam&gt;
+    &lt;/metadata&gt;
+&lt;/textInput&gt;</pre>
+        </article>
+    </slide>
+
+    <slide>
+        <hgroup>
+            <h2>Identifikace změn při ukládání 1:N položek</h2>
+        </hgroup>
+        <article style="font-size: 70%; line-height: 24px">
+            <p>V případě 1:N bundlů je potřeba identifikovat klíč podle kterého se rozpoznají <strong>nové</strong>, <strong>změněné</strong> a <strong>odebrané</strong> položky.</p>
+            <p><strong>Jak vypadá algoritmus?</strong></p>
+            <ul>
+                <li>je mapována pouze jediná položka z bundlu? → použije se ta</li>
+                <li>je mapován primární klíč bunldlu? → použije se ten</li>
+                <li>vyhodí se vyjímka</li>
+            </ul>
+            <p>Pokud vám nevyhovuje logika algoritmu, můžete sami určit položku, která se stane <strong>pivotem</strong>. Tj. klíčem k identifikaci změn.</p>
+            <p>Typicky tento problém nastává u číselníkových záznamů, kdy je pro nás důležitý primární klíč extendovaného metadata:</p>
+<pre class="prettyprint" data-lang="xml" style="font-size: 75%; line-height: 19px;">
+    &lt;hiddenInput id="tagId"&gt;
+        &lt;metadata&gt;
+            &lt;adam&gt;tag.id!&lt;/adam&gt;  &lt;!-- pivot --&gt;
+        &lt;/metadata&gt;
+    &lt;/hiddenInput&gt;
+    &lt;textInput&gt;
+        &lt;metadata&gt;
+            &lt;adam&gt;tag.name&lt;/adam&gt;
+        &lt;/metadata&gt;
+    &lt;/textInput&gt;</pre>
         </article>
     </slide>
 
