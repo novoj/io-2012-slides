@@ -184,11 +184,8 @@ URL: https://code.google.com/p/io-2012-slides
         </hgroup>
         <article class="smaller">
 <pre class="prettyprint" data-lang="xml">&lt;entity name="blogPost" table="T_BLOG_POST"&gt;
-    &lt;metadataBundle name="standardMetadata" loadByDefault="true" table="T_BLOG_POST"&gt;
-        &lt;autoloadMetadata/&gt;
-        &lt;metadata name="author" colName="idAuthor" extensionTable="T_BLOG_AUTHOR"/&gt;
-        &lt;metadata name="blog" colName="idBlog" extensionTable="T_BLOG_SITE"/&gt;
-    &lt;/metadataBundle&gt;
+    &lt;metadataBundle name="standardMetadata" loadByDefault="true" table="T_BLOG_POST"/&gt;
+    &lt;metadataBundle name="AUTHOR" multiplicity="1:1" table="T_BLOG_AUTHOR" referredByEntityColumn="idAuthor"/&gt;
     &lt;metadataBundle name="contentMetadata" multiplicity="1:1" table="T_BLOG_POST_DATA" refKey="idPost"/&gt;
     &lt;metadataBundle name="tags" loadByDefault="false" multiplicity="1:N" table="T_BLOG_POST_TAG" refKey="idPost"&gt;
         &lt;metadata name="tag" colName="idTag" extensionTable="T_BLOG_TAG" primaryKey="id"/&gt;
@@ -517,7 +514,7 @@ SELECT ... FROM Employee
         </hgroup>
         <article class="smaller">
 <pre class="prettyprint" data-lang="xml" style="font-size: 50%; line-height: 16px;">&lt;!-- abstract album - used for media type agnostic querying and updating --&gt;
-&lt;entity name="album" viewName="abstractAlbum" extends="group"&gt;
+&lt;entity name="album" viewName="abstractAlbum" table="T_MG_GROUP"&gt;
     &lt;metadataBundle name="standardMetadata"&gt;
         &lt;autoloadMetadata/&gt;
     &lt;/metadataBundle&gt;
@@ -653,7 +650,7 @@ mch.applyExtension(metadataManager, moduleSupport.getConfigSupport(config).getMo
                     <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.lifecycle.command.impl.AdamStoringCommand">adamStore</a></dt>
                     <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.lifecycle.command.impl.AdamStoringCommandAsNewRevision">adamStoreAsNewRevision</a></dt>
                     <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.lifecycle.command.impl.AdamRemovingCommand">adamRemove</a></dt>
-                    <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.lifecycle.command.impl.AdamRemoveChildItemAction">adamStoreAsNewRevision</a></dt>
+                    <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.lifecycle.command.impl.AdamRemoveChildItemAction">adamRemoveChildItemAction</a></dt>
                     <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.lifecycle.command.impl.AdamBatchUpdateCommand">adamBatchUpdate</a></dt>
                     <dt><a href="http://prototype.test.fg.cz/srv/www/qf/cs/ramjet/classDescriptor/com.fg.form.core.lifecycle.command.impl.AdamCreateRevisionCommand">adamCreateRevision</a></dt>
                 </dl>
